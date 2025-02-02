@@ -23,11 +23,33 @@ def logIn(driver):
     postLoginActions(driver)
 
 def postLoginActions(driver):
-    # Wait for the first element to be clickable and click it
-    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//div[@class='inner' and contains(., 'عملیات ثبت نام')]"))).click()
+    # Click on the "Registration Operations" button
+    WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.XPATH, "//div[@class='inner' and contains(., 'عملیات ثبت نام')]"))
+    ).click()
 
-    # Wait for the second element to be clickable and click it
-    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//td[@class='label-link' and @addnewcrs='150730006']"))).click()
+    # Read the list of course units and group codes from the file
+    unit_numbers = []
+    with open('UnitsList.txt', 'r') as file:
+        unit_numbers = [line.strip() for line in file.readlines()]
 
-    # Wait for the third element to be clickable and click it
-    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//tr[contains(@ident, '14032:150730006:2:0')]"))).click()
+    for unit_group in unit_numbers:
+        try:
+            # Split unit code and group code from the input (unit:group)
+            unit, group_code = unit_group.split(':')
+
+            # Click on the desired course
+            WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, f"//td[@class='label-link' and @addnewcrs='{unit}']"))
+            ).click()
+
+            # Select the correct group for the course
+            WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, f"//tr[contains(@ident, '14032:{unit}:{group_code}:0')]"))
+            ).click()
+
+            print(f"Course {unit} with group {group_code} successfully selected.")
+
+        except Exception as e:
+            print(f"Error selecting course {unit_group}: {e}")
+
