@@ -55,7 +55,7 @@ def checkForMessages(driver, unit, group_code, unit_numbers):
     Checks for system messages and handles different cases.
     Returns False if the process should stop.
     """
-    sleep(1)  # Wait for messages to appear
+    sleep(0.5)  # Wait for messages to appear
     messages = driver.find_elements(By.XPATH, "//div[@class='toast-message']")
 
     for msg in messages:
@@ -75,6 +75,12 @@ def checkForMessages(driver, unit, group_code, unit_numbers):
         # Case 3: Successfully registered
         elif "ثبت نام در کلاس با موفقیت انجام شد" in message_text:
             print(f"✅ Course {unit} with group {group_code} successfully registered. Removing from list.")
+            unit_numbers.remove(f"{unit}:{group_code}")
+            return True  # Continue process
+
+        # Case 4: Time conflict with another course
+        elif "برخورد ساعات تشکیل" in message_text:
+            print(f"⏳ Course {unit} (Group {group_code}) has a scheduling conflict. Removing from list.")
             unit_numbers.remove(f"{unit}:{group_code}")
             return True  # Continue process
 
@@ -124,7 +130,7 @@ def courseSelectionProcess(driver):
                     return  # Skip further checks if the course was removed
 
             except:
-                print(f"⚠️ Could not register for {unit} (Group {group_code}). Retrying...")
+                print(f"⚠️ Could not register for {unit} (Group {group_code})")
 
         # Check if courses have been taken
         for unit_group in unit_numbers[:]:  # Iterate over a copy to allow modifications
@@ -141,7 +147,7 @@ def courseSelectionProcess(driver):
                 print(f"🔄 Course {unit} (Group {group_code}) is still available. Trying again...")
 
         print(f"⏳ Waiting before the next attempt... {len(unit_numbers)} courses remaining.")
-        sleep(2)  # Adjust sleep time as needed
+        sleep(0.5)  # Adjust sleep time as needed
 
     print("🎉 All courses processed successfully!")
 
