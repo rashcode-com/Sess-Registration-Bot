@@ -1,10 +1,8 @@
-from selenium import webdriver
+from time import sleep
+
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-from time import sleep
 
 
 def logIn(driver):
@@ -26,28 +24,40 @@ def logIn(driver):
     sleep(0.5)
     driver.find_element(By.ID, "edEnter").click()
 
-    # Proceed to course selection
-    courseSelectionProcess(driver)
+
+def registrationOperations(driver):
+    # Click on "Registration Operations"
+    WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.XPATH, "//div[@class='inner' and contains(., 'عملیات ثبت نام')]"))
+    ).click()
 
 
-def checkAvailableCourses(driver, unit_numbers):
+def checkAvailableCourses(driver):
     """
     Checks if courses are available before attempting to register.
     Returns a filtered list of available courses.
     """
+    # Load course list
+    with open('UnitsList.txt', 'r') as file:
+        unit_numbers = [line.strip() for line in file.readlines()]
+
     available_courses = []
+    unavailable_courses = []
 
     for unit_group in unit_numbers:
         unit, group_code = unit_group.split(':')
         try:
             WebDriverWait(driver, 5).until(
-                EC.presence_of_element_located((By.XPATH, f"//td[@class='label-link' and @addnewcrs='{unit}']"))
+                EC.presence_of_element_located(
+                    (By.XPATH, f"//td[@class='label-link' and @addnewcrs='{unit}']")
+                )
             )
             available_courses.append(unit_group)
-        except:
+        except Exception:
             print(f"⚠️ Course {unit} is not available for registration.")
+            unavailable_courses.append(unit_group)
 
-    return available_courses
+    return available_courses, unavailable_courses
 
 
 def checkForMessages(driver, unit, group_code, unit_numbers):
@@ -87,22 +97,10 @@ def checkForMessages(driver, unit, group_code, unit_numbers):
     return True  # Default: Continue process
 
 
-def courseSelectionProcess(driver):
+def courseSelectionProcess(driver, unit_numbers):
     """
     Handles the automated course selection process.
     """
-    # Click on "Registration Operations"
-    WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.XPATH, "//div[@class='inner' and contains(., 'عملیات ثبت نام')]"))
-    ).click()
-
-    # Load course list
-    with open('UnitsList.txt', 'r') as file:
-        unit_numbers = [line.strip() for line in file.readlines()]
-
-    # Filter available courses
-    unit_numbers = checkAvailableCourses(driver, unit_numbers)
-
     # Continue attempting until all courses are processed
     while unit_numbers:
         for unit_group in unit_numbers[:]:  # Iterate over a copy to allow modifications
@@ -152,8 +150,31 @@ def courseSelectionProcess(driver):
     print("🎉 All courses processed successfully!")
 
 
-if __name__ == '__main__':
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
-    logIn(driver)
-    input("Press Enter to close the browser...")
-    driver.quit()
+def checkCourseReason(driver, unavailable_courses):
+    """
+    Checks the reason why the courses were not seen for registration.
+    """
+    print("\n🔍 Checking the reason why some courses were not available:")
+    for course in unavailable_courses:
+        unit, group_code = course.split(':')
+        try:
+            # Find and clear the input field, then enter the course code
+            input_field = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.ID, "edCrsCode"))
+            )
+            input_field.clear()
+            input_field.send_keys(unit)
+
+            # Click the check button
+            check_button = driver.find_element(By.ID, "btnCheckCrs")
+            check_button.click()
+
+            # Wait for the result to appear in the label and print it
+            result_label = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.ID, "lblCheckResult"))
+            )
+            result_text = result_label.text.strip()
+            print(f"➡️ Result for course {unit}: {result_text}")
+            sleep(0.5)
+        except Exception as e:
+            print(f"⚠️ Error checking course {unit}: {e}")
