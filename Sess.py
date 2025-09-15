@@ -1,26 +1,17 @@
-import os
 from time import sleep
-from dotenv import load_dotenv
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-# Load environment variables from .env file
-load_dotenv()
 
-def logIn(driver):
+def logIn(driver, username, password):
     """
-    Logs into the university system using credentials from 'user_pass.txt'.
+    Logs into the university system using credentials passed as arguments.
     """
-    sess_url = 'https://sess.sku.ac.ir/'
-
-    # Get username and password from environment variables
-    username = os.getenv("SESS_USERNAME")
-    password = os.getenv("SESS_PASSWORD")
-
     if not username or not password:
-        raise ValueError("USERNAME and PASSWORD must be set in the .env file.")
-
+        raise ValueError("SESS_USERNAME and SESS_PASSWORD must be set in the .env file.")
+    sess_url = 'https://sess.sku.ac.ir/'
+    
     driver.get(sess_url)
     sleep(0.5)
 
@@ -64,13 +55,11 @@ def registrationOperations(driver):
             break # Exit the loop
 
 
-def checkAvailableCourses(driver):
+def checkAvailableCourses(driver, courses_str):
     """
     Checks if courses are available before attempting to register.
     Returns a filtered list of available courses.
     """
-    # Load course list from the .env file
-    courses_str = os.getenv("COURSES")
     if not courses_str:
         print("⚠️ No courses found in the .env file. Please set the COURSES variable.")
         return [], []
@@ -133,12 +122,10 @@ def checkForMessages(driver, unit, group_code, unit_group, unit_numbers):
     return True  # Default: Continue process
 
 
-def courseSelectionProcess(driver, unit_numbers):
+def courseSelectionProcess(driver, unit_numbers, semester_code):
     """
     Handles the automated course selection process.
     """
-    # Get the semester code from environment variables
-    semester_code = os.getenv("SEMESTER")
     if not semester_code:
         raise ValueError("SEMESTER code must be set in the .env file.")
     

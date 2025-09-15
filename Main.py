@@ -1,21 +1,36 @@
+import os
+from dotenv import load_dotenv
 from Sess import *
 from selenium import webdriver
 
 if __name__ == '__main__':
+    # Load environment variables from .env file
+    load_dotenv()
+
+    # Read all required variables from the environment
+    username = os.getenv("SESS_USERNAME")
+    password = os.getenv("SESS_PASSWORD")
+    courses_str = os.getenv("COURSES")
+    semester = os.getenv("SEMESTER")
+
+    # Validate that all required variables are present
+    if not all([username, password, courses_str, semester]):
+        raise ValueError("One or more required environment variables (SESS_USERNAME, SESS_PASSWORD, COURSES, SEMESTER) are missing.")
+
     # automatically manage the ChromeDriver installation
     driver = webdriver.Chrome()
 
-    # Log in to the university system using credentials from 'user_pass.txt'
-    logIn(driver)
+    # Log in to the university system
+    logIn(driver, username, password)
 
     # Navigate to the registration operations page
     registrationOperations(driver)
 
-    # Check which courses are available and which are not
-    available_courses, unavailable_courses = checkAvailableCourses(driver)
+    # Check which courses are available
+    available_courses, unavailable_courses = checkAvailableCourses(driver, courses_str)
 
-    # Automatically attempt to register for available courses
-    courseSelectionProcess(driver, available_courses)
+    # Automatically attempt to register
+    courseSelectionProcess(driver, available_courses, semester)
 
     # Check and print the reasons why certain courses are unavailable
     checkCourseReason(driver, unavailable_courses)
