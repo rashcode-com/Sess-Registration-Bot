@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from Sess import *
+from automation import *
 from selenium import webdriver
 
 if __name__ == '__main__':
