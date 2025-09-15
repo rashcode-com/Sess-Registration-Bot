@@ -31,10 +31,37 @@ def logIn(driver):
 
 
 def registrationOperations(driver):
-    # Click on "Registration Operations"
-    WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.XPATH, "//div[@class='inner' and contains(., 'عملیات ثبت نام')]"))
-    ).click()
+    """
+    Clicks on "Registration Operations" and retries if registration is not active.
+    """
+    while True:
+        try:
+            # Click on "Registration Operations"
+            print("🔄 Attempting to enter registration operations...")
+            WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, "//div[@class='inner' and contains(., 'عملیات ثبت نام')]"))
+            ).click()
+
+            # Wait a moment to see if an error message appears
+            sleep(1)
+
+            # Check for the specific error message
+            error_message = driver.find_elements(By.XPATH, "//div[@class='toast-message' and contains(text(), 'در حال حاضر ثبت نام برای این دانشجو فعال نیست')]")
+
+            # Decide what to do based on the message
+            if error_message:
+                print("⏳ Registration is not active. Waiting for 10 seconds before retrying...")
+                sleep(10)
+                # The loop will continue, and it will try to click again
+            else:
+                # If no error message is found, the click was successful
+                print("✅ Successfully entered registration operations.")
+                break # Exit the loop and continue with the script
+
+        except Exception as e:
+            # This handles cases where the page changes and the error message can't be found,
+            print("✅ Successfully entered registration operations (or page changed).")
+            break # Exit the loop
 
 
 def checkAvailableCourses(driver):
