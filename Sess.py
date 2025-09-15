@@ -4,7 +4,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 
-def logIn(driver, username, password):
+def log_in(driver, username, password):
     """
     Logs into the university system using credentials passed as arguments.
     """
@@ -21,7 +21,7 @@ def logIn(driver, username, password):
     driver.find_element(By.ID, "edEnter").click()
 
 
-def registrationOperations(driver):
+def navigate_to_registration_page(driver):
     """
     Clicks on "Registration Operations" and retries if registration is not active.
     """
@@ -55,37 +55,37 @@ def registrationOperations(driver):
             break # Exit the loop
 
 
-def checkAvailableCourses(driver, courses_str):
+def get_available_courses(driver, course_list_string):
     """
     Checks if courses are available before attempting to register.
     Returns a filtered list of available courses.
     """
-    if not courses_str:
+    if not course_list_string:
         print("⚠️ No courses found in the .env file. Please set the COURSES variable.")
         return [], []
         
-    unit_numbers = [course.strip() for course in courses_str.split(',')]
+    course_list = [course.strip() for course in course_list_string.split(',')]
 
     available_courses = []
     unavailable_courses = []
 
-    for unit_group in unit_numbers:
-        unit = unit_group.split(':')[0]
+    for course_group in course_list:
+        course_id = course_group.split(':')[0]
         try:
             WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located(
-                    (By.XPATH, f"//td[@class='label-link' and @addnewcrs='{unit}']")
+                    (By.XPATH, f"//td[@class='label-link' and @addnewcrs='{course_id}']")
                 )
             )
-            available_courses.append(unit_group)
+            available_courses.append(course_group)
         except Exception:
-            print(f"⚠️ Course {unit} is not available for registration.")
-            unavailable_courses.append(unit_group)
+            print(f"⚠️ Course {course_id} is not available for registration.")
+            unavailable_courses.append(course_group)
 
     return available_courses, unavailable_courses
 
 
-def checkForMessages(driver, unit, group_code, unit_group, unit_numbers):
+def handle_system_messages(driver, course_id, group_code, course_group, course_list):
     """
     Checks for system messages and handles different cases.
     Returns False if the process should stop.
@@ -98,8 +98,8 @@ def checkForMessages(driver, unit, group_code, unit_group, unit_numbers):
 
         # Case 1: Not allowed to register
         if "شما اجازه ثبت نام در هیچ کدامشان را ندارید" in message_text:
-            print(f"❌ Registration for course {unit} with group {group_code} is not allowed. Removing from list.")
-            unit_numbers.remove(unit_group)
+            print(f"❌ Registration for course {course_id} with group {group_code} is not allowed. Removing from list.")
+            course_list.remove(course_group)
             return True  # Continue process
 
         # Case 2: Maximum credits reached -> STOP everything!
@@ -109,32 +109,32 @@ def checkForMessages(driver, unit, group_code, unit_group, unit_numbers):
 
         # Case 3: Successfully registered
         elif "ثبت نام در کلاس با موفقیت انجام شد" in message_text:
-            print(f"✅ Course {unit} with group {group_code} successfully registered. Removing from list.")
-            unit_numbers.remove(unit_group)
+            print(f"✅ Course {course_id} with group {group_code} successfully registered. Removing from list.")
+            course_list.remove(course_group)
             return True  # Continue process
 
         # Case 4: Time conflict with another course
         elif "برخورد ساعات تشکیل" in message_text:
-            print(f"⏳ Course {unit} (Group {group_code}) has a scheduling conflict. Removing from list.")
-            unit_numbers.remove(unit_group)
+            print(f"⏳ Course {course_id} (Group {group_code}) has a scheduling conflict. Removing from list.")
+            course_list.remove(course_group)
             return True  # Continue process
 
     return True  # Default: Continue process
 
 
-def courseSelectionProcess(driver, unit_numbers, semester_code):
+def attempt_course_registration(driver, course_list, semester_code):
     """
-    Handles the automated course selection process.
+    Handles the automated process of selecting and registering for courses.
     """
     if not semester_code:
         raise ValueError("SEMESTER code must be set in the .env file.")
     
     # Continue attempting until all courses are processed
-    while unit_numbers:
-        for unit_group in unit_numbers[:]:  # Iterate over a copy to allow modifications
+    while course_list:
+        for course_group in course_list[:]:  # Iterate over a copy to allow modifications
             
-            parts = unit_group.split(':')
-            unit = parts[0]
+            parts = course_group.split(':')
+            course_id = parts[0]
             group_code = parts[1]
             # Set sub_group to the third part if it exists, otherwise default to '0'
             sub_group = parts[2] if len(parts) > 2 else '0'
@@ -142,64 +142,64 @@ def courseSelectionProcess(driver, unit_numbers, semester_code):
             try:
                 # Attempt to select course
                 WebDriverWait(driver, 5).until(
-                    EC.element_to_be_clickable((By.XPATH, f"//td[@class='label-link' and @addnewcrs='{unit}']"))
+                    EC.element_to_be_clickable((By.XPATH, f"//td[@class='label-link' and @addnewcrs='{course_id}']"))
                 ).click()
 
                 # Check system messages for errors before selecting group
-                if not checkForMessages(driver, unit, group_code, unit_group, unit_numbers):
+                if not handle_system_messages(driver, course_id, group_code, course_group, course_list):
                     continue  # Skip further processing if the course was removed
 
                 # Select group
                 WebDriverWait(driver, 5).until(
-                    EC.element_to_be_clickable((By.XPATH, f"//tr[contains(@ident, '{semester_code}:{unit}:{group_code}:{sub_group}')]"))
+                    EC.element_to_be_clickable((By.XPATH, f"//tr[contains(@ident, '{semester_code}:{course_id}:{group_code}:{sub_group}')]"))
                 ).click()
 
-                print(f"🔄 Attempting to register for course {unit} (Group {group_code}, Sub-group {sub_group})...")
+                print(f"🔄 Attempting to register for course {course_id} (Group {group_code}, Sub-group {sub_group})...")
 
                 # Check system messages for the result
-                if not checkForMessages(driver, unit, group_code, unit_group, unit_numbers):
+                if not handle_system_messages(driver, course_id, group_code, course_group, course_list):
                     return  # Skip further checks if the course was removed
 
             except:
-                print(f"⚠️ Could not register for {unit} (Group {group_code})")
+                print(f"⚠️ Could not register for {course_id} (Group {group_code})")
 
         # Check if courses have been taken
-        for unit_group in unit_numbers[:]:  # Iterate over a copy to allow modifications
+        for course_group in course_list[:]:  # Iterate over a copy to allow modifications
             
-            parts = unit_group.split(':')
-            unit = parts[0]
+            parts = course_group.split(':')
+            course_id = parts[0]
             group_code = parts[1]
 
             try:
                 WebDriverWait(driver, 5).until(
-                    EC.invisibility_of_element_located((By.XPATH, f"//td[@class='label-link' and @addnewcrs='{unit}']"))
+                    EC.invisibility_of_element_located((By.XPATH, f"//td[@class='label-link' and @addnewcrs='{course_id}']"))
                 )
-                print(f"✅ Course {unit} (Group {group_code}) successfully registered.")
-                unit_numbers.remove(unit_group)
+                print(f"✅ Course {course_id} (Group {group_code}) successfully registered.")
+                course_list.remove(course_group)
 
             except:
-                print(f"🔄 Course {unit} (Group {group_code}) is still available. Trying again...")
+                print(f"🔄 Course {course_id} (Group {group_code}) is still available. Trying again...")
 
-        print(f"⏳ Waiting before the next attempt... {len(unit_numbers)} courses remaining.")
+        print(f"⏳ Waiting before the next attempt... {len(course_list)} courses remaining.")
         sleep(0.5)  # Adjust sleep time as needed
 
     print("🎉 All courses processed successfully!")
 
 
-def checkCourseReason(driver, unavailable_courses):
+def check_unavailable_course_reasons(driver, unavailable_courses):
     """
     Checks the reason why the courses were not seen for registration.
     """
     print("\n🔍 Checking the reason why some courses were not available:")
     for course in unavailable_courses:
-        unit = course.split(':')[0]
+        course_id = course.split(':')[0]
         try:
             # Find and clear the input field, then enter the course code
             input_field = WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.ID, "edCrsCode"))
             )
             input_field.clear()
-            input_field.send_keys(unit)
+            input_field.send_keys(course_id)
 
             # Click the check button
             check_button = driver.find_element(By.ID, "btnCheckCrs")
@@ -210,7 +210,7 @@ def checkCourseReason(driver, unavailable_courses):
                 EC.presence_of_element_located((By.ID, "lblCheckResult"))
             )
             result_text = result_label.text.strip()
-            print(f"➡️ Result for course {unit}: {result_text}")
+            print(f"➡️ Result for course {course_id}: {result_text}")
             sleep(0.5)
         except Exception as e:
-            print(f"⚠️ Error checking course {unit}: {e}")
+            print(f"⚠️ Error checking course {course_id}: {e}")

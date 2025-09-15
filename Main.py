@@ -21,19 +21,19 @@ if __name__ == '__main__':
     driver = webdriver.Chrome()
 
     # Log in to the university system
-    logIn(driver, username, password)
+    log_in(driver, username, password)
 
     # Navigate to the registration operations page
-    registrationOperations(driver)
+    navigate_to_registration_page(driver)
 
     # Check which courses are available
-    available_courses, unavailable_courses = checkAvailableCourses(driver, courses_str)
+    available_courses, unavailable_courses = get_available_courses(driver, courses_str)
 
     # Automatically attempt to register
-    courseSelectionProcess(driver, available_courses, semester)
+    attempt_course_registration(driver, available_courses, semester)
 
     # Check and print the reasons why certain courses are unavailable
-    checkCourseReason(driver, unavailable_courses)
+    check_unavailable_course_reasons(driver, unavailable_courses)
 
     # Wait for user input before closing the browser
     input("Press Enter to close the browser...")
