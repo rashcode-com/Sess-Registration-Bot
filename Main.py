@@ -1,11 +1,9 @@
 from Sess import *
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
 
 if __name__ == '__main__':
-    # Use webdriver-manager to automatically manage the ChromeDriver installation
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+    # automatically manage the ChromeDriver installation
+    driver = webdriver.Chrome()
 
     # Log in to the university system using credentials from 'user_pass.txt'
     logIn(driver)
