@@ -118,8 +118,14 @@ def courseSelectionProcess(driver, unit_numbers):
     # Continue attempting until all courses are processed
     while unit_numbers:
         for unit_group in unit_numbers[:]:  # Iterate over a copy to allow modifications
+            
             unit, group_code = unit_group.split(':')
-
+            parts = unit_group.split(':')
+            unit = parts[0]
+            group_code = parts[1]
+            # Set sub_group to the third part if it exists, otherwise default to '0'
+            sub_group = parts[2] if len(parts) > 2 else '0'
+            
             try:
                 # Attempt to select course
                 WebDriverWait(driver, 5).until(
@@ -132,10 +138,10 @@ def courseSelectionProcess(driver, unit_numbers):
 
                 # Select group
                 WebDriverWait(driver, 5).until(
-                    EC.element_to_be_clickable((By.XPATH, f"//tr[contains(@ident, {semester_code}:{unit}:{group_code}:0')]"))
+                    EC.element_to_be_clickable((By.XPATH, f"//tr[contains(@ident, {semester_code}:{unit}:{group_code}:{sub_group}')]"))
                 ).click()
 
-                print(f"🔄 Attempting to register for course {unit} (Group {group_code})...")
+                print(f"🔄 Attempting to register for course {unit} (Group {group_code}, Sub-group {sub_group})...")
 
                 # Check system messages for the result
                 if not checkForMessages(driver, unit, group_code, unit_numbers):
