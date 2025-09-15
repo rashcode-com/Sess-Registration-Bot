@@ -96,7 +96,7 @@ def checkAvailableCourses(driver):
     return available_courses, unavailable_courses
 
 
-def checkForMessages(driver, unit, group_code, sub_group, unit_numbers):
+def checkForMessages(driver, unit, group_code, unit_group, unit_numbers):
     """
     Checks for system messages and handles different cases.
     Returns False if the process should stop.
@@ -110,7 +110,7 @@ def checkForMessages(driver, unit, group_code, sub_group, unit_numbers):
         # Case 1: Not allowed to register
         if "شما اجازه ثبت نام در هیچ کدامشان را ندارید" in message_text:
             print(f"❌ Registration for course {unit} with group {group_code} is not allowed. Removing from list.")
-            unit_numbers.remove(f"{unit}:{group_code}:{sub_group}")
+            unit_numbers.remove(unit_group)
             return True  # Continue process
 
         # Case 2: Maximum credits reached -> STOP everything!
@@ -121,13 +121,13 @@ def checkForMessages(driver, unit, group_code, sub_group, unit_numbers):
         # Case 3: Successfully registered
         elif "ثبت نام در کلاس با موفقیت انجام شد" in message_text:
             print(f"✅ Course {unit} with group {group_code} successfully registered. Removing from list.")
-            unit_numbers.remove(f"{unit}:{group_code}:{sub_group}")
+            unit_numbers.remove(unit_group)
             return True  # Continue process
 
         # Case 4: Time conflict with another course
         elif "برخورد ساعات تشکیل" in message_text:
             print(f"⏳ Course {unit} (Group {group_code}) has a scheduling conflict. Removing from list.")
-            unit_numbers.remove(f"{unit}:{group_code}")
+            unit_numbers.remove(unit_group)
             return True  # Continue process
 
     return True  # Default: Continue process
@@ -159,7 +159,7 @@ def courseSelectionProcess(driver, unit_numbers):
                 ).click()
 
                 # Check system messages for errors before selecting group
-                if not checkForMessages(driver, unit, group_code, sub_group, unit_numbers):
+                if not checkForMessages(driver, unit, group_code, unit_group, unit_numbers):
                     continue  # Skip further processing if the course was removed
 
                 # Select group
@@ -170,7 +170,7 @@ def courseSelectionProcess(driver, unit_numbers):
                 print(f"🔄 Attempting to register for course {unit} (Group {group_code}, Sub-group {sub_group})...")
 
                 # Check system messages for the result
-                if not checkForMessages(driver, unit, group_code, sub_group, unit_numbers):
+                if not checkForMessages(driver, unit, group_code, unit_group, unit_numbers):
                     return  # Skip further checks if the course was removed
 
             except:
