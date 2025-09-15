@@ -1,26 +1,31 @@
+import os
 from time import sleep
-
+from dotenv import load_dotenv
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+# Load environment variables from .env file
+load_dotenv()
 
 def logIn(driver):
     """
     Logs into the university system using credentials from 'user_pass.txt'.
     """
     sess_url = 'https://sess.sku.ac.ir/'
-    user_pass = []
 
-    with open('user_pass.txt', 'r') as file:
-        user_pass.append(file.readline().strip())
-        user_pass.append(file.readline().strip())
+    # Get username and password from environment variables
+    username = os.getenv("SESS_USERNAME")
+    password = os.getenv("SESS_PASSWORD")
+
+    if not username or not password:
+        raise ValueError("USERNAME and PASSWORD must be set in the .env file.")
 
     driver.get(sess_url)
     sleep(0.5)
 
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.NAME, "edId"))).send_keys(user_pass[0])
-    driver.find_element(By.ID, "edPass").send_keys(user_pass[1])
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.NAME, "edId"))).send_keys(username)
+    driver.find_element(By.ID, "edPass").send_keys(password)
     sleep(0.5)
     driver.find_element(By.ID, "edEnter").click()
 
@@ -37,9 +42,13 @@ def checkAvailableCourses(driver):
     Checks if courses are available before attempting to register.
     Returns a filtered list of available courses.
     """
-    # Load course list
-    with open('UnitsList.txt', 'r') as file:
-        unit_numbers = [line.strip() for line in file.readlines()]
+    # Load course list from the .env file
+    courses_str = os.getenv("COURSES")
+    if not courses_str:
+        print("⚠️ No courses found in the .env file. Please set the COURSES variable.")
+        return [], []
+        
+    unit_numbers = [course.strip() for course in courses_str.split(',')]
 
     available_courses = []
     unavailable_courses = []
