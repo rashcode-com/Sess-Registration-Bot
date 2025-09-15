@@ -81,7 +81,7 @@ def checkAvailableCourses(driver):
     unavailable_courses = []
 
     for unit_group in unit_numbers:
-        unit, group_code = unit_group.split(':')
+        unit = unit_group.split(':')[0]
         try:
             WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located(
@@ -96,7 +96,7 @@ def checkAvailableCourses(driver):
     return available_courses, unavailable_courses
 
 
-def checkForMessages(driver, unit, group_code, unit_numbers):
+def checkForMessages(driver, unit, group_code, sub_group, unit_numbers):
     """
     Checks for system messages and handles different cases.
     Returns False if the process should stop.
@@ -110,7 +110,7 @@ def checkForMessages(driver, unit, group_code, unit_numbers):
         # Case 1: Not allowed to register
         if "شما اجازه ثبت نام در هیچ کدامشان را ندارید" in message_text:
             print(f"❌ Registration for course {unit} with group {group_code} is not allowed. Removing from list.")
-            unit_numbers.remove(f"{unit}:{group_code}")
+            unit_numbers.remove(f"{unit}:{group_code}:{sub_group}")
             return True  # Continue process
 
         # Case 2: Maximum credits reached -> STOP everything!
@@ -121,7 +121,7 @@ def checkForMessages(driver, unit, group_code, unit_numbers):
         # Case 3: Successfully registered
         elif "ثبت نام در کلاس با موفقیت انجام شد" in message_text:
             print(f"✅ Course {unit} with group {group_code} successfully registered. Removing from list.")
-            unit_numbers.remove(f"{unit}:{group_code}")
+            unit_numbers.remove(f"{unit}:{group_code}:{sub_group}")
             return True  # Continue process
 
         # Case 4: Time conflict with another course
@@ -146,7 +146,6 @@ def courseSelectionProcess(driver, unit_numbers):
     while unit_numbers:
         for unit_group in unit_numbers[:]:  # Iterate over a copy to allow modifications
             
-            unit, group_code = unit_group.split(':')
             parts = unit_group.split(':')
             unit = parts[0]
             group_code = parts[1]
@@ -160,18 +159,18 @@ def courseSelectionProcess(driver, unit_numbers):
                 ).click()
 
                 # Check system messages for errors before selecting group
-                if not checkForMessages(driver, unit, group_code, unit_numbers):
+                if not checkForMessages(driver, unit, group_code, sub_group, unit_numbers):
                     continue  # Skip further processing if the course was removed
 
                 # Select group
                 WebDriverWait(driver, 5).until(
-                    EC.element_to_be_clickable((By.XPATH, f"//tr[contains(@ident, {semester_code}:{unit}:{group_code}:{sub_group}')]"))
+                    EC.element_to_be_clickable((By.XPATH, f"//tr[contains(@ident, '{semester_code}:{unit}:{group_code}:{sub_group}')]"))
                 ).click()
 
                 print(f"🔄 Attempting to register for course {unit} (Group {group_code}, Sub-group {sub_group})...")
 
                 # Check system messages for the result
-                if not checkForMessages(driver, unit, group_code, unit_numbers):
+                if not checkForMessages(driver, unit, group_code, sub_group, unit_numbers):
                     return  # Skip further checks if the course was removed
 
             except:
@@ -179,7 +178,10 @@ def courseSelectionProcess(driver, unit_numbers):
 
         # Check if courses have been taken
         for unit_group in unit_numbers[:]:  # Iterate over a copy to allow modifications
-            unit, group_code = unit_group.split(':')
+            
+            parts = unit_group.split(':')
+            unit = parts[0]
+            group_code = parts[1]
 
             try:
                 WebDriverWait(driver, 5).until(
@@ -203,7 +205,7 @@ def checkCourseReason(driver, unavailable_courses):
     """
     print("\n🔍 Checking the reason why some courses were not available:")
     for course in unavailable_courses:
-        unit, group_code = course.split(':')
+        unit = course.split(':')[0]
         try:
             # Find and clear the input field, then enter the course code
             input_field = WebDriverWait(driver, 10).until(
