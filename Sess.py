@@ -110,6 +110,11 @@ def courseSelectionProcess(driver, unit_numbers):
     """
     Handles the automated course selection process.
     """
+    # Get the semester code from environment variables
+    semester_code = os.getenv("SEMESTER")
+    if not semester_code:
+        raise ValueError("SEMESTER code must be set in the .env file.")
+    
     # Continue attempting until all courses are processed
     while unit_numbers:
         for unit_group in unit_numbers[:]:  # Iterate over a copy to allow modifications
@@ -127,7 +132,7 @@ def courseSelectionProcess(driver, unit_numbers):
 
                 # Select group
                 WebDriverWait(driver, 5).until(
-                    EC.element_to_be_clickable((By.XPATH, f"//tr[contains(@ident, '14032:{unit}:{group_code}:0')]"))
+                    EC.element_to_be_clickable((By.XPATH, f"//tr[contains(@ident, {semester_code}:{unit}:{group_code}:0')]"))
                 ).click()
 
                 print(f"🔄 Attempting to register for course {unit} (Group {group_code})...")
