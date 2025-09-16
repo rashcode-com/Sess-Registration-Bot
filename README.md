@@ -9,7 +9,9 @@ This project is a Python script that fully automates the course registration pro
 
 Using the Selenium library, the bot handles logging in, waiting for the registration window to open, and registering for a predefined list of courses automatically.
 
-![Screenshot of the SESS Bot GUI](./assets/gui_screenshot.png)
+<p align="center">
+  <img src="./assets/gui_screenshot.png" alt="Screenshot of the SESS Bot GUI" width="400">
+</p>
 
 ## ✨ Features
 
