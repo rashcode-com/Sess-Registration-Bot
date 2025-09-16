@@ -37,23 +37,30 @@ def navigate_to_registration_page(driver):
             # Wait a moment to see if an error message appears
             sleep(1)
 
-            # Check for the specific error message
-            error_message = driver.find_elements(By.XPATH, "//div[@class='toast-message' and contains(text(), 'در حال حاضر ثبت نام برای این دانشجو فعال نیست')]")
+            # Check for the CRITICAL "evaluation incomplete" error
+            evaluation_error_msg = driver.find_elements(By.XPATH, "//div[@class='toast-message' and contains(text(), 'براي دروس زير ارزيابي انجام نداده ايد')]")
+            if evaluation_error_msg:
+                logging.critical("❌ ERROR: Registration not allowed due to incomplete course evaluations.")
+                raise SystemExit("Incomplete course evaluations.") # Stop the entire script
 
-            # Decide what to do based on the message
-            if error_message:
+            # Check for the "registration not active" error
+            not_active_error_msg = driver.find_elements(By.XPATH, "//div[@class='toast-message' and contains(text(), 'در حال حاضر ثبت نام برای این دانشجو فعال نیست')]")
+            if not_active_error_msg:
                 logging.warning("⏳ Registration is not active. Waiting for 10 seconds before retrying...")
                 sleep(10)
-                # The loop will continue, and it will try to click again
-            else:
-                # If no error message is found, the click was successful
-                logging.info("✅ Successfully entered registration operations.")
-                break # Exit the loop and continue with the script
+                continue # Retry the loop
 
+            # If no specific error messages are found, assume success
+            logging.info("✅ Successfully entered registration operations.")
+            break
+
+        except SystemExit as e:
+            # Re-raise the exception to ensure the script stops
+            raise e
         except Exception as e:
-            # This handles cases where the page changes and the error message can't be found,
+            # This handles cases where the page changes and the error message can't be found
             logging.info("✅ Successfully entered registration operations (or page changed).")
-            break # Exit the loop
+            break
 
 
 def get_available_courses(driver, course_list_string):
