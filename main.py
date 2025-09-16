@@ -1,9 +1,21 @@
 import os
+import logging
 from dotenv import load_dotenv
 from automation import *
 from selenium import webdriver
 
 if __name__ == '__main__':
+    
+    # Configure root logger: set log level and define output format (time, level, message)
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        datefmt='%H:%M:%S'
+    )
+    
+    # Reduce noise: only show ERROR or higher logs from selenium library
+    logging.getLogger('selenium').setLevel(logging.ERROR)
+
     # Load environment variables from .env file
     load_dotenv()
 

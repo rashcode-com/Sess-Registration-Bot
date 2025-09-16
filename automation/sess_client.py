@@ -1,3 +1,4 @@
+import logging
 from time import sleep
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -28,7 +29,7 @@ def navigate_to_registration_page(driver):
     while True:
         try:
             # Click on "Registration Operations"
-            print("🔄 Attempting to enter registration operations...")
+            logging.info("🔄 Attempting to enter registration operations...")
             WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, "//div[@class='inner' and contains(., 'عملیات ثبت نام')]"))
             ).click()
@@ -41,17 +42,17 @@ def navigate_to_registration_page(driver):
 
             # Decide what to do based on the message
             if error_message:
-                print("⏳ Registration is not active. Waiting for 10 seconds before retrying...")
+                logging.warning("⏳ Registration is not active. Waiting for 10 seconds before retrying...")
                 sleep(10)
                 # The loop will continue, and it will try to click again
             else:
                 # If no error message is found, the click was successful
-                print("✅ Successfully entered registration operations.")
+                logging.info("✅ Successfully entered registration operations.")
                 break # Exit the loop and continue with the script
 
         except Exception as e:
             # This handles cases where the page changes and the error message can't be found,
-            print("✅ Successfully entered registration operations (or page changed).")
+            logging.info("✅ Successfully entered registration operations (or page changed).")
             break # Exit the loop
 
 
@@ -61,7 +62,7 @@ def get_available_courses(driver, course_list_string):
     Returns a filtered list of available courses.
     """
     if not course_list_string:
-        print("⚠️ No courses found in the .env file. Please set the COURSES variable.")
+        logging.warning("⚠️ No courses found in the .env file. Please set the COURSES variable.")
         return [], []
         
     course_list = [course.strip() for course in course_list_string.split(',')]
@@ -79,7 +80,7 @@ def get_available_courses(driver, course_list_string):
             )
             available_courses.append(course_group)
         except Exception:
-            print(f"⚠️ Course {course_id} is not available for registration.")
+            logging.warning(f"⚠️ Course {course_id} is not available for registration.")
             unavailable_courses.append(course_group)
 
     return available_courses, unavailable_courses
@@ -98,24 +99,24 @@ def handle_system_messages(driver, course_id, group_code, course_group, course_l
 
         # Case 1: Not allowed to register
         if "شما اجازه ثبت نام در هیچ کدامشان را ندارید" in message_text:
-            print(f"❌ Registration for course {course_id} with group {group_code} is not allowed. Removing from list.")
+            logging.error(f"❌ Registration for course {course_id} with group {group_code} is not allowed. Removing from list.")
             course_list.remove(course_group)
             return True  # Continue process
 
         # Case 2: Maximum credits reached -> STOP everything!
         elif "تعداد واحد اخذ شده بیش از حد مجاز است" in message_text:
-            print("⚠️ Maximum allowed credits reached! Stopping registration process.")
+            logging.critical("⚠️ Maximum allowed credits reached! Stopping registration process.")
             return False  # Signal to stop the entire process
 
         # Case 3: Successfully registered
         elif "ثبت نام در کلاس با موفقیت انجام شد" in message_text:
-            print(f"✅ Course {course_id} with group {group_code} successfully registered. Removing from list.")
+            logging.info(f"✅ Course {course_id} with group {group_code} successfully registered. Removing from list.")
             course_list.remove(course_group)
             return True  # Continue process
 
         # Case 4: Time conflict with another course
         elif "برخورد ساعات تشکیل" in message_text:
-            print(f"⏳ Course {course_id} (Group {group_code}) has a scheduling conflict. Removing from list.")
+            logging.warning(f"⏳ Course {course_id} (Group {group_code}) has a scheduling conflict. Removing from list.")
             course_list.remove(course_group)
             return True  # Continue process
 
@@ -154,14 +155,14 @@ def attempt_course_registration(driver, course_list, semester_code):
                     EC.element_to_be_clickable((By.XPATH, f"//tr[contains(@ident, '{semester_code}:{course_id}:{group_code}:{sub_group}')]"))
                 ).click()
 
-                print(f"🔄 Attempting to register for course {course_id} (Group {group_code}, Sub-group {sub_group})...")
+                logging.info(f"🔄 Attempting to register for course {course_id} (Group {group_code}, Sub-group {sub_group})...")
 
                 # Check system messages for the result
                 if not handle_system_messages(driver, course_id, group_code, course_group, course_list):
                     return  # Skip further checks if the course was removed
 
             except:
-                print(f"⚠️ Could not register for {course_id} (Group {group_code})")
+                logging.error(f"⚠️ Could not register for {course_id} (Group {group_code})")
 
         # Check if courses have been taken
         for course_group in course_list[:]:  # Iterate over a copy to allow modifications
@@ -174,23 +175,29 @@ def attempt_course_registration(driver, course_list, semester_code):
                 WebDriverWait(driver, 5).until(
                     EC.invisibility_of_element_located((By.XPATH, f"//td[@class='label-link' and @addnewcrs='{course_id}']"))
                 )
-                print(f"✅ Course {course_id} (Group {group_code}) successfully registered.")
+                logging.info(f"✅ Course {course_id} (Group {group_code}) successfully registered.")
                 course_list.remove(course_group)
 
             except:
-                print(f"🔄 Course {course_id} (Group {group_code}) is still available. Trying again...")
+                logging.info(f"🔄 Course {course_id} (Group {group_code}) is still available. Trying again...")
 
-        print(f"⏳ Waiting before the next attempt... {len(course_list)} courses remaining.")
+        if not course_list:
+            break  # Exit if all courses are processed
+
+        logging.info(f"⏳ Waiting before the next attempt... {len(course_list)} courses remaining.")
         sleep(0.5)  # Adjust sleep time as needed
 
-    print("🎉 All courses processed successfully!")
+    logging.info("🎉 All courses processed successfully!")
 
 
 def check_unavailable_course_reasons(driver, unavailable_courses):
     """
     Checks the reason why the courses were not seen for registration.
     """
-    print("\n🔍 Checking the reason why some courses were not available:")
+    if not unavailable_courses:
+        return
+    
+    logging.info("\n🔍 Checking the reason why some courses were not available:")
     for course in unavailable_courses:
         course_id = course.split(':')[0]
         try:
@@ -205,12 +212,12 @@ def check_unavailable_course_reasons(driver, unavailable_courses):
             check_button = driver.find_element(By.ID, "btnCheckCrs")
             check_button.click()
 
-            # Wait for the result to appear in the label and print it
+            # Wait for the result to appear in the label and log it
             result_label = WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.ID, "lblCheckResult"))
             )
             result_text = result_label.text.strip()
-            print(f"➡️ Result for course {course_id}: {result_text}")
+            logging.info(f"➡️ Result for course {course_id}: {result_text}")
             sleep(0.5)
         except Exception as e:
-            print(f"⚠️ Error checking course {course_id}: {e}")
+            logging.error(f"⚠️ Error checking course {course_id}: {e}")
