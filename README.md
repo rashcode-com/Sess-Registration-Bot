@@ -34,13 +34,13 @@ Follow these steps to get the project up and running.
 ### 1. Prerequisites
 
 - **Python 3.8** or higher.
-- **Google Chrome** browser.
+- One of the supported browsers: **Chrome, Firefox, Edge, or Safari**.
 
 ### 2. Installation
 
 1.  First, clone the repository to your local machine:
     ```bash
-    git clone [https://github.com/rashcode-com/Sess-Registration-Bot.git](https://github.com/rashcode-com/Sess-Registration-Bot.git)
+    git clone https://github.com/rashcode-com/Sess-Registration-Bot.git
     cd Sess-Registration-Bot
     ```
 
@@ -54,7 +54,8 @@ Follow these steps to get the project up and running.
 The application uses a `.env` file to store your settings. The way you configure this file depends on how you run the bot.
 
 **For GUI Users (Recommended):**
-You do not need to create the `.env` file manually. The first time you run the application (`python main.py`), the file will be created automatically. You can then enter your username, password, courses, and semester directly into the graphical interface, and your settings will be saved to the `.env` file for the next time you run the app.
+You do not need to create the `.env` file manually. The first time you run the application (`python main.py`), the file will be created automatically. You can then enter your username, password, courses, and browser directly into the graphical interface
+, and your settings will be saved to the `.env` file for the next time you run the app.
 
 **For CLI Users:**
 Before running in CLI mode, you **must** create and configure the `.env` file manually. The easiest way is to make a copy of the provided sample file:
@@ -73,7 +74,7 @@ Then, open the `.env` file and fill in your personal information according to th
 | `SESS_USERNAME` | Your student ID number.                                                                              | `s4011000000`                   |
 | `SESS_PASSWORD` | Your password for the SESS portal.                                                                   | `YourPassword`                  |
 | `COURSES`     | A comma-separated list of courses. Format: `unit_code:group_code` or `unit_code:group_code:subgroup_code`. | `"190200000:1,190100000:1:1"` |
-| `SEMESTER`    | The 5-digit code for the academic semester.                                                          | `"14041"`                       |
+| `BROWSER`       | The browser to use (Chrome, Firefox, Edge, Safari). Default is Chrome. | `"Chrome"` |
 
 ---
 
@@ -97,7 +98,7 @@ you can use the command-line interface by passing the `--cli` argument.
 python main.py --cli
 ```
 
-The bot will launch a Chrome browser and begin the automated registration process. A full report of its actions will be logged.
+The bot will launch the selected browser and begin the automated registration process.
 
 ---
 
