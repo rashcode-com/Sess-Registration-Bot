@@ -66,10 +66,10 @@ class RegistrationBotUI:
         log_frame.pack(fill=tk.X, pady=5)
 
         # --- Credentials Widgets ---
-        # Input fields for username, password, semester
+        # Input fields for username, password, browser
         self.username_var = tk.StringVar()
         self.password_var = tk.StringVar()
-        self.semester_var = tk.StringVar()
+        self.browser_var = tk.StringVar()
 
         ttk.Label(credentials_frame, text="Username:").grid(
             row=0, column=0, sticky=tk.W, padx=5, pady=5)
@@ -81,10 +81,15 @@ class RegistrationBotUI:
         ttk.Entry(credentials_frame, textvariable=self.password_var,
                   show="*", width=30).grid(row=1, column=1, sticky=tk.EW)
 
-        ttk.Label(credentials_frame, text="Semester Code:").grid(
+        ttk.Label(credentials_frame, text="Select Browser:").grid(
             row=2, column=0, sticky=tk.W, padx=5, pady=5)
-        ttk.Entry(credentials_frame, textvariable=self.semester_var,
-                  width=30).grid(row=2, column=1, sticky=tk.EW)
+        
+        browser_combo = ttk.Combobox(credentials_frame, textvariable=self.browser_var, 
+                                     values=["Chrome", "Firefox", "Edge", "Safari"], 
+                                     state="readonly", width=28)
+        browser_combo.grid(row=2, column=1, sticky=tk.EW)
+        if not self.browser_var.get():
+            browser_combo.current(0) # Default to Chrome
 
         credentials_frame.columnconfigure(1, weight=1)
 
@@ -182,7 +187,7 @@ class RegistrationBotUI:
         load_dotenv(dotenv_path=ENV_FILE)
         self.username_var.set(os.getenv("SESS_USERNAME", ""))
         self.password_var.set(os.getenv("SESS_PASSWORD", ""))
-        self.semester_var.set(os.getenv("SEMESTER", ""))
+        self.browser_var.set(os.getenv("BROWSER", "Chrome"))
 
         # Parse course entries from the environment variable
         courses_str = os.getenv("COURSES", "")
@@ -219,16 +224,16 @@ class RegistrationBotUI:
         # Save all values into the .env file
         set_key(ENV_FILE, "SESS_USERNAME", self.username_var.get())
         set_key(ENV_FILE, "SESS_PASSWORD", self.password_var.get())
-        set_key(ENV_FILE, "SEMESTER", self.semester_var.get())
+        set_key(ENV_FILE, "BROWSER", self.browser_var.get())
         set_key(ENV_FILE, "COURSES", courses_str)
         logging.info("Settings saved to .env file.")
         return courses_str
 
     def start_registration_thread(self):
         """ Validates input, saves settings, and starts the automation thread. """
-        if not all([self.username_var.get(), self.password_var.get(), self.semester_var.get()]):
+        if not all([self.username_var.get(), self.password_var.get()]):
             messagebox.showerror(
-                "Error", "Please fill in Username, Password, and Semester Code.")
+                "Error", "Please fill in Username and Password.")
             return
 
         courses_str = self.save_env()  # Save settings and get the course string
@@ -253,10 +258,18 @@ class RegistrationBotUI:
 
             username = self.username_var.get()
             password = self.password_var.get()
-            semester = self.semester_var.get()
+            browser_name = self.browser_var.get()
 
-            # Launch Chrome WebDriver
-            self.driver = webdriver.Chrome()
+            # Launch Selected WebDriver
+            logging.info(f"🚀 Launching {browser_name} browser...")
+            if browser_name == "Firefox":
+                self.driver = webdriver.Firefox()
+            elif browser_name == "Edge":
+                self.driver = webdriver.Edge()
+            elif browser_name == "Safari":
+                self.driver = webdriver.Safari()
+            else:
+                self.driver = webdriver.Chrome()
 
             # Perform the automated steps
             log_in(self.driver, username, password)
@@ -271,7 +284,7 @@ class RegistrationBotUI:
             # Try to register available courses
             if available_courses:
                 attempt_course_registration(
-                    self.driver, available_courses, semester)
+                    self.driver, available_courses)
 
             # Log reasons for unavailable courses
             if unavailable_courses:

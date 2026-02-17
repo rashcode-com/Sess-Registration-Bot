@@ -28,18 +28,26 @@ def run_cli():
     username = os.getenv("SESS_USERNAME")
     password = os.getenv("SESS_PASSWORD")
     courses_str = os.getenv("COURSES")
-    semester = os.getenv("SEMESTER")
+    browser_name = os.getenv("BROWSER", "Chrome")
 
     # Validate that all required variables are present
-    if not all([username, password, courses_str, semester]):
+    if not all([username, password, courses_str]):
         logging.critical(
             "One or more required environment variables are missing in .env file.")
         raise ValueError("Required environment variables are missing.")
 
     driver = None
     try:
-        # automatically manage the ChromeDriver installation
-        driver = webdriver.Chrome()
+        # Initialize the selected browser
+        logging.info(f"🚀 Launching {browser_name} browser...")
+        if browser_name == "Firefox":
+            driver = webdriver.Firefox()
+        elif browser_name == "Edge":
+            driver = webdriver.Edge()
+        elif browser_name == "Safari":
+            driver = webdriver.Safari()
+        else:
+            driver = webdriver.Chrome()
 
         # Log in to the university system
         log_in(driver, username, password)
@@ -52,7 +60,7 @@ def run_cli():
             driver, courses_str)
 
         # Automatically attempt to register
-        attempt_course_registration(driver, available_courses, semester)
+        attempt_course_registration(driver, available_courses)
 
         # Check and print the reasons why certain courses are unavailable
         check_unavailable_course_reasons(driver, unavailable_courses)

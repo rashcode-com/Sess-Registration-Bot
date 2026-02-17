@@ -130,13 +130,10 @@ def handle_system_messages(driver, course_id, group_code, course_group, course_l
     return True  # Default: Continue process
 
 
-def attempt_course_registration(driver, course_list, semester_code):
+def attempt_course_registration(driver, course_list):
     """
     Handles the automated process of selecting and registering for courses.
     """
-    if not semester_code:
-        raise ValueError("SEMESTER code must be set in the .env file.")
-    
     # Continue attempting until all courses are processed
     while course_list:
         for course_group in course_list[:]:  # Iterate over a copy to allow modifications
@@ -158,9 +155,14 @@ def attempt_course_registration(driver, course_list, semester_code):
                     continue  # Skip further processing if the course was removed
 
                 # Select group
-                WebDriverWait(driver, 5).until(
-                    EC.element_to_be_clickable((By.XPATH, f"//tr[contains(@ident, ':{course_id}:{group_code}:{sub_group}')]"))
-                ).click()
+                driver.execute_script(
+                    "arguments[0].click();",
+                    WebDriverWait(driver, 5).until(
+                        EC.presence_of_element_located(
+                            (By.XPATH, f"//tr[contains(@ident, ':{course_id}:{group_code}:{sub_group}')]")
+                        )
+                    )
+                )
 
                 logging.info(f"🔄 Attempting to register for course {course_id} (Group {group_code}, Sub-group {sub_group})...")
 
