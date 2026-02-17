@@ -159,7 +159,7 @@ def attempt_course_registration(driver, course_list, semester_code):
 
                 # Select group
                 WebDriverWait(driver, 5).until(
-                    EC.element_to_be_clickable((By.XPATH, f"//tr[contains(@ident, '{semester_code}:{course_id}:{group_code}:{sub_group}')]"))
+                    EC.element_to_be_clickable((By.XPATH, f"//tr[contains(@ident, ':{course_id}:{group_code}:{sub_group}')]"))
                 ).click()
 
                 logging.info(f"🔄 Attempting to register for course {course_id} (Group {group_code}, Sub-group {sub_group})...")
